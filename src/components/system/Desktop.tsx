@@ -1,15 +1,72 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import { ThemeProvider, CssBaseline, Box, Typography } from "@mui/material";
 import { theme } from "../../theme";
 import { WindowInstance, ComponentDefinition } from "../../types";
 import { WindowFrame } from "./WindowFrame";
 import { Taskbar } from "./Taskbar";
 
-export const Desktop = ({ registry }: { registry: Record<string, ComponentDefinition> }) => {
+export interface DesktopState {
+    windows: WindowInstance[];
+    activeWindowId: string | null;
+    currentDesktop: number;
+    desktopCount: number;
+    nextZIndex: number;
+}
+
+export interface DesktopHandle {
+    getState: () => DesktopState;
+    loadConfig: (state: DesktopState) => void;
+}
+
+interface DesktopProps {
+    registry: Record<string, ComponentDefinition>;
+}
+
+export const Desktop = forwardRef<DesktopHandle, DesktopProps>(({ registry }, ref) => {
     const [windows, setWindows] = useState<WindowInstance[]>([]);
     const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
     const [currentDesktop, setCurrentDesktop] = useState(0);
+    const [desktopCount, setDesktopCount] = useState(3);
     const [nextZIndex, setNextZIndex] = useState(100);
+
+    useImperativeHandle(ref, () => ({
+        getState: () => ({
+            windows,
+            activeWindowId,
+            currentDesktop,
+            desktopCount,
+            nextZIndex
+        }),
+        loadConfig: (state: DesktopState) => {
+            setWindows(state.windows);
+            setActiveWindowId(state.activeWindowId);
+            setCurrentDesktop(state.currentDesktop);
+            setDesktopCount(state.desktopCount);
+            setNextZIndex(state.nextZIndex);
+        }
+    }));
+
+    const addDesktop = () => setDesktopCount(c => c + 1);
+
+    const removeDesktop = () => {
+        if (desktopCount <= 1) return;
+
+        const newCount = desktopCount - 1;
+
+        // Move windows from removed desktop to the last available one (newCount - 1)
+        setWindows(ws => ws.map(w => {
+            if (w.desktopId >= newCount) {
+                return { ...w, desktopId: newCount - 1 };
+            }
+            return w;
+        }));
+
+        if (currentDesktop >= newCount) {
+            setCurrentDesktop(newCount - 1);
+        }
+
+        setDesktopCount(newCount);
+    };
 
     const addWindow = (componentId: string) => {
         const def = registry[componentId];
@@ -128,8 +185,11 @@ export const Desktop = ({ registry }: { registry: Record<string, ComponentDefini
                     onLaunch={addWindow}
                     currentDesktop={currentDesktop}
                     onSwitchDesktop={setCurrentDesktop}
+                    desktopCount={desktopCount}
+                    onAddDesktop={addDesktop}
+                    onRemoveDesktop={removeDesktop}
                 />
             </Box>
         </ThemeProvider>
     );
-};
+});

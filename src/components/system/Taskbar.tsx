@@ -24,7 +24,10 @@ export const Taskbar = ({
     onWindowClick,
     onLaunch,
     currentDesktop,
-    onSwitchDesktop
+    onSwitchDesktop,
+    desktopCount,
+    onAddDesktop,
+    onRemoveDesktop
 }: {
     windows: WindowInstance[];
     registry: Record<string, ComponentDefinition>;
@@ -33,6 +36,9 @@ export const Taskbar = ({
     onLaunch: (id: string) => void;
     currentDesktop: number;
     onSwitchDesktop: (id: number) => void;
+    desktopCount: number;
+    onAddDesktop: () => void;
+    onRemoveDesktop: () => void;
 }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -97,28 +103,46 @@ export const Taskbar = ({
                         display: 'flex',
                         bgcolor: 'rgba(0,0,0,0.05)',
                         borderRadius: 2,
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        alignItems: 'center'
                     }}
                 >
-                    {[0, 1, 2].map(d => (
+                    <IconButton
+                        size="small"
+                        onClick={onRemoveDesktop}
+                        disabled={desktopCount <= 1}
+                        sx={{ borderRadius: 0, width: 24, height: '100%' }}
+                    >
+                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>-</Typography>
+                    </IconButton>
+
+                    {Array.from({ length: desktopCount }).map((_, i) => (
                         <Button
-                            key={d}
-                            onClick={() => onSwitchDesktop(d)}
-                            variant={currentDesktop === d ? "contained" : "text"}
-                            color={currentDesktop === d ? "primary" : "inherit"}
+                            key={i}
+                            onClick={() => onSwitchDesktop(i)}
+                            variant={currentDesktop === i ? "contained" : "text"}
+                            color={currentDesktop === i ? "primary" : "inherit"}
                             sx={{
                                 minWidth: 36,
                                 px: 1,
                                 borderRadius: 0,
-                                opacity: currentDesktop === d ? 1 : 0.6
+                                opacity: currentDesktop === i ? 1 : 0.6
                             }}
                         >
                             <Stack spacing={0} sx={{ alignItems: 'center' }}>
                                 <DesktopWindows fontSize="small" />
-                                <Typography variant="caption" sx={{ fontSize: '0.6rem', lineHeight: 1 }}>{d + 1}</Typography>
+                                <Typography variant="caption" sx={{ fontSize: '0.6rem', lineHeight: 1 }}>{i + 1}</Typography>
                             </Stack>
                         </Button>
                     ))}
+
+                    <IconButton
+                        size="small"
+                        onClick={onAddDesktop}
+                        sx={{ borderRadius: 0, width: 24, height: '100%' }}
+                    >
+                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>+</Typography>
+                    </IconButton>
                 </Paper>
 
                 <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
